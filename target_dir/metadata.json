@@ -1,0 +1,6 @@
+{
+  "name": "CashCalc Pro",
+  "description": "Premium minimal calculator and currency counter with Indian Rupee support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
