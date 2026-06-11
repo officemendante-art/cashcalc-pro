@@ -3,11 +3,14 @@ package com.example.core.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -54,20 +57,20 @@ fun SoftTactileButton(
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
+    var isPressed by remember { mutableStateOf(false) }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
-    // Smooth spring responsive scale
+    // Smooth responsive scale
     val scaleFactor by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else if (isHovered) 1.03f else 1.0f,
-        animationSpec = spring(dampingRatio = 0.62f, stiffness = 1200f),
+        targetValue = if (isPressed) 0.95f else if (isHovered) 1.03f else 1.0f,
+        animationSpec = if (isPressed) tween(80) else tween(120),
         label = "ButtonScale"
     )
 
-    // Smooth physical mechanical displacement travel offset
+    // Physical mechanical displacement travel offset
     val travelOffset by animateFloatAsState(
-        targetValue = if (isPressed) -1.0f else if (isHovered) -0.5f else 0.0f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 1300f),
+        targetValue = if (isPressed) 1.0f else if (isHovered) -0.5f else 0.0f,
+        animationSpec = if (isPressed) tween(80) else tween(120),
         label = "ButtonTravel"
     )
 
@@ -88,13 +91,14 @@ fun SoftTactileButton(
             )
             else -> backgroundColor
         },
+        animationSpec = if (isPressed) tween(80) else tween(120),
         label = "BackgroundColor"
     )
 
     // Smooth physics bloom animation for the gorgeous glow
     val glowIntensity by animateFloatAsState(
         targetValue = if (isPressed) 1.0f else 0.0f,
-        animationSpec = spring(dampingRatio = 0.75f, stiffness = 1500f),
+        animationSpec = if (isPressed) tween(80) else tween(120),
         label = "GlowIntensity"
     )
 
@@ -171,14 +175,19 @@ fun SoftTactileButton(
                         )
                     }
                 }
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null, // Custom physical scale and haptic clicks used instead of default ripples
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onClick()
-                    }
-                ),
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isPressed = true
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            tryAwaitRelease()
+                            isPressed = false
+                        },
+                        onTap = {
+                            onClick()
+                        }
+                    )
+                },
             contentAlignment = Alignment.Center
         ) {
             Text(
